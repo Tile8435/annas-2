@@ -75,7 +75,7 @@ jobs:
         run: |
           URL=$(jq -r '.[] | select(.status == "pending") | .url' download_list.json | head -n 1)
           PATH=$(jq -r '.[] | select(.status == "pending") | .path' download_list.json | head -n 1)
-          PATH_SAFE=$(echo "$PATH" | tr ' ' '_')
+          PATH_SAFE="${PATH// /_}"
           echo "url=$URL" >> $GITHUB_OUTPUT
           echo "path=$PATH" >> $GITHUB_OUTPUT
           echo "path_safe=$PATH_SAFE" >> $GITHUB_OUTPUT
