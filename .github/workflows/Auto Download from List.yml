@@ -73,10 +73,8 @@ jobs:
       - name: Get first pending item
         id: get_item
         run: |
-          ITEM=$(jq '.[] | select(.status == "pending") | {url, path} | tostring' download_list.json | head -n 1 | tr -d '"')
-          echo "item=$ITEM" >> $GITHUB_OUTPUT
-          URL=$(echo $ITEM | jq -r '.url')
-          PATH=$(echo $ITEM | jq -r '.path')
+          URL=$(jq -r '.[] | select(.status == "pending") | .url' download_list.json | head -n 1)
+          PATH=$(jq -r '.[] | select(.status == "pending") | .path' download_list.json | head -n 1)
           PATH_SAFE=$(echo "$PATH" | tr ' ' '_')
           echo "url=$URL" >> $GITHUB_OUTPUT
           echo "path=$PATH" >> $GITHUB_OUTPUT
