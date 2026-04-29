@@ -1,0 +1,115 @@
+name: Auto Download from List
+
+on:
+  workflow_dispatch:
+    inputs:
+      split_size:
+        description: '文件大小超过此值时拆分（单位MB，默认99.9）'
+        required: false
+        default: '99.9'
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  download-next-item:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Install dependencies
+        run: |
+          git lfs install
+          git lfs track "*.pdf"
+          git lfs track "*.zip"
+          git lfs track "*.rar"
+          git lfs track "*.tar.gz"
+          git lfs track "*.tar"
+          git lfs track "*.7z"
+          git lfs track "*.epub"
+          git lfs track "*.mobi"
+          git lfs track "*.azw"
+          git lfs track "*.azw3"
+          git lfs track "*.djvu"
+          git lfs track "*.chm"
+          git lfs track "*.mp4"
+          git lfs track "*.mkv"
+          git lfs track "*.avi"
+          git lfs track "*.mov"
+          git lfs track "*.wmv"
+          git lfs track "*.flv"
+          git lfs track "*.webm"
+          git lfs track "*.mp3"
+          git lfs track "*.flac"
+          git lfs track "*.wav"
+          git lfs track "*.ogg"
+          git lfs track "*.m4a"
+          git lfs track "*.aac"
+          git lfs track "*.iso"
+          git lfs track "*.img"
+          git lfs track "*.bin"
+          git lfs track "*.dll"
+          git lfs track "*.exe"
+          git lfs track "*.deb"
+          git lfs track "*.rpm"
+          git add .gitattributes
+
+      - name: Check for pending items
+        id: check_pending
+        run: |
+          PENDING_COUNT=$(jq '[.[] | select(.status == "pending")] | length' download_list.json)
+          echo "pending_count=$PENDING_COUNT" >> $GITHUB_OUTPUT
+          if [ "$PENDING_COUNT" -eq 0 ]; then
+            echo "::error::没有待下载的文件，停止运行"
+            exit 1
+          fi
+
+      - name: Get first pending item
+        id: get_item
+        run: |
+          ITEM=$(jq '.[] | select(.status == "pending") | {url, path} | tostring' download_list.json | head -n 1 | tr -d '"')
+          echo "item=$ITEM" >> $GITHUB_OUTPUT
+          URL=$(echo $ITEM | jq -r '.url')
+          PATH=$(echo $ITEM | jq -r '.path')
+          echo "url=$URL" >> $GITHUB_OUTPUT
+          echo "path=$PATH" >> $GITHUB_OUTPUT
+
+      - name: Download file
+        run: |
+          mkdir -p "$(dirname "${{ steps.get_item.outputs.path }}")"
+          curl -L -o "${{ steps.get_item.outputs.path }}" "${{ steps.get_item.outputs.url }}"
+          echo "下载完成: ${{ steps.get_item.outputs.path }}"
+
+          FILE_SIZE=$(stat -c%s "${{ steps.get_item.outputs.path }}")
+          SPLIT_SIZE=$(echo "${{ inputs.split_size }} * 1024 * 1024" | bc)
+          
+          if [ "$FILE_SIZE" -gt "$SPLIT_SIZE" ]; then
+            echo "文件大小为 $FILE_SIZE 字节，超过 $SPLIT_SIZE 字节，开始拆分..."
+            split -b "${{ inputs.split_size }}M" "${{ steps.get_item.outputs.path }}" "${{ steps.get_item.outputs.path }}.part"
+            rm "${{ steps.get_item.outputs.path }}"
+            echo "cat ${{ steps.get_item.outputs.path }}.part* > ${{ steps.get_item.outputs.path }}" > "${{ steps.get_item.outputs.path }}.merge.sh"
+            chmod +x "${{ steps.get_item.outputs.path }}.merge.sh"
+          fi
+
+      - name: Mark as completed
+        run: |
+          jq '(.[] | select(.url == "${{ steps.get_item.outputs.url }}" and .path == "${{ steps.get_item.outputs.path }}")).status = "completed"' download_list.json > temp.json
+          mv temp.json download_list.json
+
+      - name: Commit changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add .
+          git diff --staged --quiet && echo "没有新文件需要提交" && exit 0
+          git commit -m "下载完成: ${{ steps.get_item.outputs.path }}"
+          git pull --rebase origin main || git rebase --abort
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
