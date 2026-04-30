@@ -1,0 +1,31 @@
+name: Cleanup Old Runs
+on:
+  workflow_dispatch:  # 手动触发
+  schedule:
+    - cron: '10 14 * * *'  # 每天凌晨3点自动清
+
+jobs:
+  delete-runs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: Mattraks/delete-workflow-runs@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          retain_days: 7          # 保留最近7天
+          keep_minimum_runs: 10   # 至少保留10条最新
+```{insert\_element\_4\_}
+
+- 权限：`GITHUB_TOKEN` 默认有 **actions:write**，够用{insert\_element\_5\_}。
+- 可加过滤：只删某分支、某状态等。
+
+---
+
+## 四、常见问题
+- **找不到 Delete 按钮**：run 还在运行 / 不到两周且未完成 → 先 cancel，等状态结束。
+- **403 权限不足**：token 没勾选 **workflow** 权限 → 重新登录/生成 token。
+- **删了 workflow 文件，但 runs 还在**：删除 .yml 只是**不再触发新 run**，历史 runs 必须用上面方法手动/批量删。
+
+---
+
+要不要我帮你生成一个**可直接复制的批量删除脚本**，你只需要替换仓库名就能用？
