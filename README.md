@@ -6,4 +6,4 @@ url：直连链接
 
 path：根目录下路径
 
-status：pending待下载、completed已完成
+status：completed已完成，其他字段即为待下载
