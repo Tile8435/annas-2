@@ -1,16 +1,21 @@
 name: Cleanup Old Runs
 on:
-  workflow_dispatch:  # 手动触发
+  workflow_dispatch:
   schedule:
-    - cron: '0 3 * * *'  # 每天凌晨3点自动清
+    - cron: '10 14 * * *'  # 每天14:10执行
 
 jobs:
   delete-runs:
     runs-on: ubuntu-latest
+    permissions:
+      actions: write   # 关键：给删除 workflow 权限
+      contents: read
     steps:
       - uses: Mattraks/delete-workflow-runs@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           repository: ${{ github.repository }}
-          retain_days: 0          # 保留最近7天
-          keep_minimum_runs: 0   # 至少保留10条最新
+          retain_days: 0  # 保留最近0天
+          keep_minimum_runs: 0  # 至少保留0条最新
+          # 额外加一条：跳过删除“清理任务自己”的运行记录
+          # skip_workflow_ids: "268756909"
