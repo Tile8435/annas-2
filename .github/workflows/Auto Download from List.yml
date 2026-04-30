@@ -75,7 +75,7 @@ jobs:
         run: |
           URL=$(jq -r '.[] | select(.status != "completed") | .url' download_list.json | head -n 1)
           PATH=$(jq -r '.[] | select(.status != "completed") | .path' download_list.json | head -n 1)
-          PATH_SAFE="${PATH// /_}"
+          PATH_SAFE=$(echo "$PATH" | sed 's/[][ #\$%&*+,;=?@"<>|\\:]/_/g')
           echo "url=$URL" >> $GITHUB_OUTPUT
           echo "path=$PATH" >> $GITHUB_OUTPUT
           echo "path_safe=$PATH_SAFE" >> $GITHUB_OUTPUT
