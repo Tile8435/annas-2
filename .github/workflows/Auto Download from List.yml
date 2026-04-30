@@ -63,7 +63,7 @@ jobs:
       - name: Check for pending items
         id: check_pending
         run: |
-          PENDING_COUNT=$(jq '[.[] | select(.status == "pending")] | length' download_list.json)
+          PENDING_COUNT=$(jq '. | length' download_list.json)
           echo "pending_count=$PENDING_COUNT" >> $GITHUB_OUTPUT
           if [ "$PENDING_COUNT" -eq 0 ]; then
             echo "::error::没有待下载的文件，停止运行"
@@ -73,8 +73,8 @@ jobs:
       - name: Get first pending item
         id: get_item
         run: |
-          URL=$(jq -r '.[] | select(.status == "pending") | .url' download_list.json | head -n 1)
-          PATH=$(jq -r '.[] | select(.status == "pending") | .path' download_list.json | head -n 1)
+          URL=$(jq -r '.[0].url' download_list.json)
+          PATH=$(jq -r '.[0].path' download_list.json)
           PATH_SAFE="${PATH// /_}"
           echo "url=$URL" >> $GITHUB_OUTPUT
           echo "path=$PATH" >> $GITHUB_OUTPUT
@@ -97,9 +97,9 @@ jobs:
             chmod +x "${{ steps.get_item.outputs.path_safe }}.merge.sh"
           fi
 
-      - name: Mark as completed
+      - name: Remove downloaded item from list
         run: |
-          jq '(.[] | select(.url == "${{ steps.get_item.outputs.url }}" and .path == "${{ steps.get_item.outputs.path }}")).status = "completed"' download_list.json > temp.json
+          jq 'del(.[0])' download_list.json > temp.json
           mv temp.json download_list.json
 
       - name: Commit changes
