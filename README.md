@@ -1,9 +1,9 @@
 在线下载文件，主要用于Anna's网站
 
-download_list.json:
+download_list.json文件，添加下载直链:
 
-url：直连链接
+- url：直连链接
 
-path：根目录下路径
+- path：根目录下路径
 
-status：completed已完成，其他字段即为待下载
+- status：completed已完成，其他字段即为待下载
