@@ -7,3 +7,6 @@ download_list.json文件，添加下载直链:
 - path：根目录下路径
 
 - status：completed已完成，其他字段即为待下载
+
+使用方法：
+download_list添加下载直链 -> Actions -> Auto Download from List
